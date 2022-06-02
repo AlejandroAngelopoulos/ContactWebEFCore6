@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace ContactWebModels
 {
-    internal class Contact
+    public class Contact
     {
         [Key]
         public int Id { get; set; }
@@ -27,8 +27,8 @@ namespace ContactWebModels
         [StringLength(ContactManagerConstants.MAX_EMAIL_LENGTH)]
         [EmailAddress (ErrorMessage ="Invalid Email Address")]
         public string Email { get; set; }
-
-        public DateOnly Birthday { get; set; }
+        [DataType(DataType.Date)]
+        public DateTime Birthday { get; set; }
 
         [Display (Name = "Mobile Phone")]
         [Required]

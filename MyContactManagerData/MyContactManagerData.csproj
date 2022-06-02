@@ -19,4 +19,8 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\ContactWebModels\ContactWebModels.csproj" />
+  </ItemGroup>
+
 </Project>
