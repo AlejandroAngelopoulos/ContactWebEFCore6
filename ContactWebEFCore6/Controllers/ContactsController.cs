@@ -7,16 +7,38 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using ContactWebModels;
 using MyContactManagerData;
+using ContactWebEFCore6.Models;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace ContactWebEFCore6.Controllers
 {
     public class ContactsController : Controller
     {
         private readonly MyContactManagerDBContext _context;
+        private static List<State> _allStates;
+        private static SelectList _statesData;
+        private IMemoryCache _cache;
 
-        public ContactsController(MyContactManagerDBContext context)
+        public ContactsController(MyContactManagerDBContext context, IMemoryCache cache)
         {
+            _cache = cache;
             _context = context;
+            SetAllStatesCachingData();
+            _statesData = new SelectList(_allStates, "Id", "Abbreviation");
+
+        }
+
+        private void SetAllStatesCachingData()
+        {
+            var allStates = new List<State>();
+            if (!_cache.TryGetValue(ContactCacheConstants.ALL_STATES, out allStates))
+            {
+                var allStatesData = Task.Run(() => _context.States.ToListAsync()).Result;
+                _cache.Set(ContactCacheConstants.ALL_STATES, allStatesData, TimeSpan.FromDays(1));
+                allStates = allStatesData;
+            }
+            _allStates = allStates;
+
         }
 
         // GET: Contacts
@@ -167,14 +189,14 @@ namespace ContactWebEFCore6.Controllers
             {
                 _context.Contacts.Remove(contact);
             }
-            
+
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
         private bool ContactExists(int id)
         {
-          return (_context.Contacts?.Any(e => e.Id == id)).GetValueOrDefault();
+            return (_context.Contacts?.Any(e => e.Id == id)).GetValueOrDefault();
         }
     }
 }

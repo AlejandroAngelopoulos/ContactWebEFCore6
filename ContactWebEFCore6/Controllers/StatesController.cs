@@ -2,24 +2,35 @@
 using Microsoft.EntityFrameworkCore;
 using ContactWebModels;
 using MyContactManagerData;
+using Microsoft.Extensions.Caching.Memory;
+using ContactWebEFCore6.Models;
 
 namespace ContactWebEFCore6.Controllers
 {
     public class StatesController : Controller
     {
         private readonly MyContactManagerDBContext _context;
+        private IMemoryCache _cache;
 
-        public StatesController(MyContactManagerDBContext context)
+        public StatesController(MyContactManagerDBContext context, IMemoryCache cache)
         {
             _context = context;
+            _cache = cache;
+
         }
 
         // GET: States
         public async Task<IActionResult> Index()
         {
-              return _context.States != null ? 
-                          View(await _context.States.ToListAsync()) :
-                          Problem("Entity set 'MyContactManagerDBContext.States'  is null.");
+
+            var allStates = new List<State>();
+            if (!_cache.TryGetValue(ContactCacheConstants.ALL_STATES, out allStates))
+            {
+                var allStatesData = await _context.States.ToListAsync();
+                _cache.Set(ContactCacheConstants.ALL_STATES, allStatesData,TimeSpan.FromDays(1));
+                return View(allStatesData);
+            }
+            return View(allStates);
         }
 
         // GET: States/Details/5
@@ -55,6 +66,7 @@ namespace ContactWebEFCore6.Controllers
         {
             if (ModelState.IsValid)
             {
+                _cache.Remove(ContactCacheConstants.ALL_STATES);
                 _context.Add(state);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
@@ -94,8 +106,10 @@ namespace ContactWebEFCore6.Controllers
             {
                 try
                 {
+                    _cache.Remove(ContactCacheConstants.ALL_STATES);
                     _context.Update(state);
                     await _context.SaveChangesAsync();
+                    _cache.Remove(ContactCacheConstants.ALL_STATES);
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -144,15 +158,16 @@ namespace ContactWebEFCore6.Controllers
             if (state != null)
             {
                 _context.States.Remove(state);
+                _cache.Remove(ContactCacheConstants.ALL_STATES);
             }
-            
+
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
         private bool StateExists(int id)
         {
-          return (_context.States?.Any(e => e.Id == id)).GetValueOrDefault();
+            return (_context.States?.Any(e => e.Id == id)).GetValueOrDefault();
         }
     }
 }
