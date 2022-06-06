@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace MyContactManagerServices
 {
-    public class ContactsService : IContactsServices
+    public class ContactsService : IContactsService
     {
         public async Task<int> AddOrUpdateAsync(Contact Contact)
         {

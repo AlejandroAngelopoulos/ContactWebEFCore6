@@ -2,7 +2,7 @@
 
 namespace MyContactManagerServices
 {
-    public interface IContactsServices
+    public interface IContactsService
     {
         Task<IList<Contact>> GetAll();
         Task<Contact?> GetAsync();

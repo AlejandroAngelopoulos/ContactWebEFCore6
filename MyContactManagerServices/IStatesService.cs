@@ -3,10 +3,9 @@ using MyContactManagerRepositories;
 
 namespace MyContactManagerServices
 {
-    public interface IStatesServices
+    public interface IStatesService
     {
-        Task<IList<State>> GetAll();
-        Task<State?> GetAsync();
+        Task<State?> GetAsync(int id);
         Task<IList<State>> GetAllAsync(int? limit = null);
         Task<int> AddOrUpdateAsync(State state);
         Task<int> DeleteAsync(State state);

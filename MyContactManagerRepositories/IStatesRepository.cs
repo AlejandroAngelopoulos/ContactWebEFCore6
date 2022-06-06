@@ -5,9 +5,8 @@ namespace MyContactManagerRepositories
     public interface IStatesRepository
     {
 
-        Task<IList<State>> GetAll();
-        Task<State?> GetAsync();
-        Task<IList<State>> GetAllAsync(int? limit = null);
+        Task<State?> GetAsync(int id);
+        Task<IList<State>> GetAllAsync();
         Task<int> AddOrUpdateAsync(State state);
         Task<int> DeleteAsync(State state);
         Task<int> DeleteAsync(int id);

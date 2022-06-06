@@ -1,47 +1,80 @@
 ﻿using ContactWebModels;
+using Microsoft.EntityFrameworkCore;
+using MyContactManagerData;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MyContactManagerRepositories
 {
     public class StatesRepository : IStatesRepository
     {
+        public MyContactManagerDBContext _context;
+
+        public StatesRepository(MyContactManagerDBContext context)
+        {
+            _context = context;
+        }
+
+        public async Task<IList<State>> GetAllAsync()
+        {
+            return await _context.States.AsNoTracking().ToListAsync();
+
+        }
+
+        public async Task<State?> GetAsync(int id)
+        {
+           return await _context.States.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id);
+        }
         public async Task<int> AddOrUpdateAsync(State state)
         {
-            throw new NotImplementedException();
+            if (state.Id > 0)
+            {
+                return await Update(state);
+            }
+
+            return await Insert(state);
         }
+
+        private async Task<int> Insert(State state)
+        {
+            await _context.AddAsync(state);
+            await _context.SaveChangesAsync();  
+            return state.Id;
+        }
+
+        private async Task<int> Update(State state)
+        {
+            var existingState = await _context.States.SingleOrDefaultAsync(x => x.Id == state.Id);
+            if (existingState is null)
+                throw new Exception("State not found");
+
+            existingState.Abbreviation = state.Abbreviation;    
+            existingState.Name = state.Name;
+
+            await _context.SaveChangesAsync();
+            return existingState.Id;
+        }
+
 
         public async Task<int> DeleteAsync(State state)
         {
-            throw new NotImplementedException();
+            return await DeleteAsync(state.Id);
         }
 
         public async Task<int> DeleteAsync(int id)
         {
-            throw new NotImplementedException();
+            var existingState = await _context.States.SingleOrDefaultAsync(x => x.Id == id);
+            if (existingState is null)
+                throw new Exception("Could not delete State");
+            await Task.Run(()=> { _context.States.Remove(existingState); });
+            await _context.SaveChangesAsync();
+            return id;
         }
 
         public async Task<bool> ExistsAsync(int id)
         {
-            throw new NotImplementedException();
+           return _context.States.Any(x => x.Id == id);
         }
 
-        public async Task<IList<State>> GetAll()
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<IList<State>> GetAllAsync(int? limit = null)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<State?> GetAsync()
-        {
-            throw new NotImplementedException();
-        }
+        
     }
 }

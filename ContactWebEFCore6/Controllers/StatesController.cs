@@ -4,17 +4,25 @@ using ContactWebModels;
 using MyContactManagerData;
 using Microsoft.Extensions.Caching.Memory;
 using ContactWebEFCore6.Models;
+using MyContactManagerServices;
 
 namespace ContactWebEFCore6.Controllers
 {
     public class StatesController : Controller
     {
-        private readonly MyContactManagerDBContext _context;
+        private readonly IStatesService _statesService;
         private IMemoryCache _cache;
 
-        public StatesController(MyContactManagerDBContext context, IMemoryCache cache)
+        //public StatesController(MyContactManagerDBContext context, IMemoryCache cache)
+        //{
+        //    _context = context;
+        //    _cache = cache;
+
+        //}
+
+        public StatesController(IStatesService stateservice, IMemoryCache cache)
         {
-            _context = context;
+            _statesService = stateservice;
             _cache = cache;
 
         }
@@ -26,7 +34,7 @@ namespace ContactWebEFCore6.Controllers
             var allStates = new List<State>();
             if (!_cache.TryGetValue(ContactCacheConstants.ALL_STATES, out allStates))
             {
-                var allStatesData = await _context.States.ToListAsync();
+                var allStatesData = await _statesService.GetAllAsync() as List<State>;
                 _cache.Set(ContactCacheConstants.ALL_STATES, allStatesData,TimeSpan.FromDays(1));
                 return View(allStatesData);
             }
@@ -36,13 +44,8 @@ namespace ContactWebEFCore6.Controllers
         // GET: States/Details/5
         public async Task<IActionResult> Details(int? id)
         {
-            if (id == null || _context.States == null)
-            {
-                return NotFound();
-            }
-
-            var state = await _context.States
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var state = await _statesService.GetAsync((int)id);
+               
             if (state == null)
             {
                 return NotFound();
@@ -66,9 +69,9 @@ namespace ContactWebEFCore6.Controllers
         {
             if (ModelState.IsValid)
             {
+                await _statesService.AddOrUpdateAsync(state);
                 _cache.Remove(ContactCacheConstants.ALL_STATES);
-                _context.Add(state);
-                await _context.SaveChangesAsync();
+                
                 return RedirectToAction(nameof(Index));
             }
             return View(state);
@@ -77,16 +80,10 @@ namespace ContactWebEFCore6.Controllers
         // GET: States/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null || _context.States == null)
-            {
-                return NotFound();
-            }
+           
 
-            var state = await _context.States.FindAsync(id);
-            if (state == null)
-            {
-                return NotFound();
-            }
+            var state = await _statesService.GetAsync((int)id);
+            
             return View(state);
         }
 
@@ -106,9 +103,8 @@ namespace ContactWebEFCore6.Controllers
             {
                 try
                 {
-                    _cache.Remove(ContactCacheConstants.ALL_STATES);
-                    _context.Update(state);
-                    await _context.SaveChangesAsync();
+                    
+                    await _statesService.AddOrUpdateAsync(state);
                     _cache.Remove(ContactCacheConstants.ALL_STATES);
                 }
                 catch (DbUpdateConcurrencyException)
@@ -130,13 +126,10 @@ namespace ContactWebEFCore6.Controllers
         // GET: States/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null || _context.States == null)
-            {
-                return NotFound();
-            }
 
-            var state = await _context.States
-                .FirstOrDefaultAsync(m => m.Id == id);
+
+            var state = await _statesService.GetAsync((int)id);
+                
             if (state == null)
             {
                 return NotFound();
@@ -150,24 +143,17 @@ namespace ContactWebEFCore6.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            if (_context.States == null)
-            {
-                return Problem("Entity set 'MyContactManagerDBContext.States'  is null.");
-            }
-            var state = await _context.States.FindAsync(id);
-            if (state != null)
-            {
-                _context.States.Remove(state);
-                _cache.Remove(ContactCacheConstants.ALL_STATES);
-            }
 
-            await _context.SaveChangesAsync();
+            await _statesService.DeleteAsync(id);
+           
+            _cache.Remove(ContactCacheConstants.ALL_STATES);
+                      
             return RedirectToAction(nameof(Index));
         }
 
         private bool StateExists(int id)
         {
-            return (_context.States?.Any(e => e.Id == id)).GetValueOrDefault();
+            return Task.Run(()=>_statesService.ExistsAsync(id)).Result;
         }
     }
 }
